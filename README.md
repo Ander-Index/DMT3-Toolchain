@@ -1,4 +1,4 @@
-# DMT3 免双狗发行套装（DMT3-de-ddoogg）
+# DMT3 免双狗套装（DMT3-de-ddoogg）
 
 让 DJMAX TECHNIKA 3 在**不插两只实物加密狗**（SenseLock EL + Rockey6 SMART PLUS）
 的情况下正常运行的完整发行包。三件套各管一层，按顺序部署即可。
