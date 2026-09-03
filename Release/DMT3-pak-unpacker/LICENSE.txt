@@ -1,0 +1,24 @@
+DMT3 .pak 解包器 许可声明 / License
+
+本工具的源代码按 **CC BY-NC-SA 4.0**（知识共享 署名-非商业性使用-相同方式共享）发布：
+
+  https://creativecommons.org/licenses/by-nc-sa/4.0/
+  法律文本（中文）: https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode.zh-Hans
+  Legal code (English): https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+
+用人话说：
+
+  * 你可以随意使用本工具，但不得用于商业用途（不能用它赚钱）。
+  * 你可以按原样分发本工具的代码，但必须保留署名（Kimi K3 & AnderX）。
+  * 如果你修改了代码，必须以相同条款开源你修改后的代码。
+  * 开发者不提供任何担保，使用后果自负（AS IS，详见许可证正文）。
+
+注意：
+
+  * 本许可仅适用于本工具自身的代码。脚本内嵌的 pakkey 密钥数据提取自
+    游戏 DJMAX TECHNIKA 3（版权归 Pentavision 所有），不属于本许可的授权范围；
+    请仅将其用于个人学习/研究目的。
+  * .pt 谱面解密相关算法曾参考 samnyan/DMTQ-Tools
+    （https://github.com/samnyan/DMTQ-Tools，仅交叉验证、未复制代码；
+    该库自身未声明许可证，其 LICENSE.txt 仅覆盖捆绑依赖：
+    UnpackMe.SDK.Standard [MIT] (c) HSReina、lz4net [BSD] (c) Milosz Krajewski）。

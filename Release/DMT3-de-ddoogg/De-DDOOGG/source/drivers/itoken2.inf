@@ -1,0 +1,51 @@
+; itoken2.inf - virtual Senselock EL dongle (root-enumerated)
+; Hardware ID chosen so the device PATH contains "vid_0471&pid_485d"
+; (instance id ROOT\VID_0471&PID_485D\0000 -> \\?\root#vid_0471&pid_485d#0000#{...})
+; Install: pnputil /add-driver itoken2.inf /install ; devcon install itoken2.inf root\vid_0471&pid_485d
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider=%Provider%
+DriverVer=08/27/2026,1.0.0.5
+CatalogFile=itoken2.cat
+PnpLockdown=1
+
+[DestinationDirs]
+DefaultDestDir=13
+
+[SourceDisksNames]
+1=%DiskDesc,,,
+
+[SourceDisksFiles]
+itoken2.sys=1
+
+[Manufacturer]
+%Mfg%=Std,NTamd64.10.0...22000
+
+[Std.NTamd64.10.0...22000]
+%DeviceDesc%=Install, root\vid_0471&pid_485d
+
+[Install.NT]
+CopyFiles=CopySys
+
+[Install.NT.Services]
+AddService=itoken2v2,0x00000002,FilterSvc
+
+[FilterSvc]
+DisplayName=%SvcDesc%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%13%\itoken2.sys
+
+[CopySys]
+itoken2.sys
+
+[Strings]
+Provider="DMT3 Toolkit"
+Mfg="DMT3 Toolkit"
+DeviceDesc="Virtual Senselock EL Dongle"
+SvcDesc="Virtual Senselock EL driver"
+DiskDesc="DMT3 itoken2 install disk"

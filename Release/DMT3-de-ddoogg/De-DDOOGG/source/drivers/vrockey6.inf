@@ -1,0 +1,64 @@
+; vrockey6.inf - virtual Rockey6 SMART PLUS HID dongle (root-enumerated)
+; Architecture: MsHidKmdf (hidclass = function driver, vrockey6.sys = lower filter)
+; Install: pnputil /add-driver vrockey6.inf /install ; pnputil /add-device root\vrockey6
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=HIDClass
+ClassGuid={745a17a0-74d3-11d0-b6fe-00a0c90f57da}
+Provider=%Provider%
+DriverVer=08/26/2026,1.1.0.0
+CatalogFile=vrockey6.cat
+PnpLockdown=1
+
+[DestinationDirs]
+DefaultDestDir=13
+
+[SourceDisksNames]
+1=%DiskDesc,,,
+
+[SourceDisksFiles]
+vrockey6.sys=1
+
+[Manufacturer]
+%Mfg%=Std,NTamd64.10.0...22000
+
+[Std.NTamd64.10.0...22000]
+%DeviceDesc%=Install, root\vrockey6
+
+[Install.NT]
+CopyFiles=CopySys
+Include=MsHidKmdf.inf
+Needs=MsHidKmdf.NT
+
+[Install.NT.HW]
+Include=MsHidKmdf.inf
+Needs=MsHidKmdf.NT.HW
+
+[Install.NT.Services]
+Include=MsHidKmdf.inf
+Needs=MsHidKmdf.NT.Services
+AddService=vrockey6,0x00000800,FilterSvc
+
+[Install.NT.Filters]
+AddFilter=vrockey6,,FilterInstall
+
+[FilterInstall]
+FilterPosition=Lower
+
+[FilterSvc]
+DisplayName=%SvcDesc%
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%13%\vrockey6.sys
+
+[CopySys]
+vrockey6.sys
+
+[Strings]
+Provider="DMT3 Toolkit"
+Mfg="DMT3 Toolkit"
+DeviceDesc="Virtual Rockey6 SMART PLUS Dongle"
+SvcDesc="Virtual Rockey6 lower filter"
+DiskDesc="DMT3 vrockey6 install disk"
