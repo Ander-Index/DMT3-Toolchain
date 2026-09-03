@@ -28,8 +28,10 @@ Write-Host "[2/3] 删除驱动包 ..."
 $enum = pnputil /enum-drivers | Out-String
 $blocks = $enum -split "(?=oem\d+\.inf)"
 foreach ($b in $blocks) {
-    if ($b -match '(oem\d+)\.inf' -and ($b -match 'itoken2\.inf' -or $b -match 'vrockey6\.inf')) {
-        $oem = $Matches[1] + '.inf'
+    # 注意：先判断文件名再捕获 oem 名——若把两个 -match 写进同一条件，
+    # 后一个 -match 会覆盖 $Matches，导致拿到空的驱动名（"删除 .inf"）
+    if (($b -match 'itoken2\.inf' -or $b -match 'vrockey6\.inf') -and ($b -match '(oem\d+\.inf)')) {
+        $oem = $Matches[1]
         Write-Host "  删除 $oem"
         pnputil /delete-driver $oem /uninstall 2>$null | Out-Null
     }

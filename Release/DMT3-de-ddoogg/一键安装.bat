@@ -136,7 +136,27 @@ function Invoke-FullInstall {
     & $Logger "[系统] 驱动/证书/代理（install.ps1 -Flavor $Flavor）……"
     Invoke-PkgScript 'install.ps1' @('-GameDir', $GameDir, '-Flavor', $Flavor) |
         ForEach-Object { & $Logger "$ $_" }
-    & $Logger '全部完成。若 testsigning 是本次才开启的，请重启一次电脑。'
+    $code = $LASTEXITCODE
+    if ($code -eq 2) {
+        # testsigning 本次才开启：install.ps1 已退出，驱动尚未安装，需重启后再装。
+        # 挂一个一次性开机任务：重启登录后自动重跑 install 完成续装。
+        $tn = 'DMT3-DDOOGG-ResumeInstall'
+        $tr = '"' + $env:DMT3_SELF + '" install "' + $GameDir + '" ' + $Flavor + ' pause'
+        # try/catch：EAP=Stop 下 schtasks 写 stderr 会抛 NativeCommandError
+        try { schtasks /create /tn $tn /tr $tr /sc onlogon /rl highest /f 2>$null | Out-Null; $taskOk = ($LASTEXITCODE -eq 0) } catch { $taskOk = $false }
+        if ($taskOk) {
+            & $Logger '!! 测试签名模式是本次才开启的：驱动尚未安装，必须重启一次。'
+            & $Logger '!! 已创建一次性开机任务：重启并登录后会自动继续安装（装完窗口会停住，确认后回车关闭）。'
+        } else {
+            & $Logger '!! 测试签名模式是本次才开启的：驱动尚未安装。'
+            & $Logger '!! 自动续装任务创建失败——请重启后手动再点一次「一键安装」。'
+        }
+        return
+    }
+    # 安装成功走完：清掉可能存在的续装任务（幂等，任务不存在也无妨）
+    try { schtasks /delete /tn 'DMT3-DDOOGG-ResumeInstall' /f 2>$null | Out-Null } catch {}
+    if ($code -ne 0) { & $Logger "!! install.ps1 退出码 $code，请检查上方输出。"; return }
+    & $Logger '全部完成。拔掉两只实物狗，直接启动游戏即可。'
 }
 
 # 一键卸载全流程（需管理员）：De-DDOOGG uninstall.ps1 → 文件层还原
@@ -145,6 +165,8 @@ function Invoke-FullUninstall {
     & $Logger '[系统] 卸载虚拟狗驱动（uninstall.ps1）……'
     Invoke-PkgScript 'uninstall.ps1' @('-GameDir', $GameDir) |
         ForEach-Object { & $Logger "$ $_" }
+    # 清掉可能存在的续装任务（避免卸载后下次登录又自动装回来）
+    try { schtasks /delete /tn 'DMT3-DDOOGG-ResumeInstall' /f 2>$null | Out-Null } catch {}
     & $Logger '[文件] 还原文件层……'
     Restore-Files -GameDir $GameDir -Logger $Logger
     & $Logger '卸载完成。'

@@ -89,9 +89,11 @@ DMT3 的 `Client.exe` 是 2012 年 D3D9 独占全屏游戏，在 Win11 + 新显�
    不需要就直接 `Client.exe` 启动。
 
 3. **De-DDOOGG**：双击套装根目录的 **`一键安装.bat`** → 选游戏目录和代理版本 →
-   点「一键安装」（非管理员会自动弹 UAC 提权；中途如提示重启，重启后再装一次）。
+   点「一键安装」（非管理员会自动弹 UAC 提权）。若测试模式是本次才开启的，
+   驱动要重启后才能装——安装器会自动挂一个一次性开机任务，**重启登录后自动续装**，
+   无需手动重跑（也可重启后手动再点一次「一键安装」，效果相同）。
    命令行也可以：`一键安装.bat status|install|uninstall|testmode-on|testmode-off [游戏目录] [ir|touch]`。
-   也可以手动跑 `De-DDOOGG\install.ps1`（等效，见该包 README）。
+   也可以手动跑 `De-DDOOGG\install.ps1`（等效，见该包 README；手动跑时若提示重启，重启后需自己再跑一次）。
 
    安装器/脚本会依次做（中途如提示重启，重启后再跑一次）：
    1. 导入测试证书（`drivers\*.cer`，Root + TrustedPublisher）
