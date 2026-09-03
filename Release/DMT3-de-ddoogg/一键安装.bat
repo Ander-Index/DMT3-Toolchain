@@ -48,68 +48,68 @@ $script:LauncherFiles = @('launcher.exe', 'libver.dll', 'LauncherSettings.ini', 
 
 # 覆盖前把原版改名为 <名>.bak_official（幂等）
 function Backup-Then-Copy {
-    param([string]$SrcFile, [string]$DstDir, [string]$Name, [scriptblock]$Log)
+    param([string]$SrcFile, [string]$DstDir, [string]$Name, [scriptblock]$Logger)
     $dst = Join-Path $DstDir $Name
     if ((Test-Path $dst) -and -not (Test-Path "$dst.bak_official")) {
         Rename-Item -LiteralPath $dst -NewName "$Name.bak_official"
-        & $Log "  备份 $Name -> $Name.bak_official"
+        & $Logger "  备份 $Name -> $Name.bak_official"
     }
     Copy-Item $SrcFile $dst -Force
-    & $Log "  部署 $Name"
+    & $Logger "  部署 $Name"
 }
 
 function Copy-DirMerge {
-    param([string]$SrcDir, [string]$DstDir, [scriptblock]$Log)
+    param([string]$SrcDir, [string]$DstDir, [scriptblock]$Logger)
     Copy-Item $SrcDir $DstDir -Recurse -Force
     $n = (Get-ChildItem $DstDir -Recurse -File).Count
-    & $Log "  部署 $(Split-Path $SrcDir -Leaf)\（$n 个文件）"
+    & $Logger "  部署 $(Split-Path $SrcDir -Leaf)\（$n 个文件）"
 }
 
 # 文件层部署：StartKit + RCGrandDogW32 stub（+ 可选 Launcher / dgVoodoo2）
 function Deploy-Files {
-    param([string]$GameDir, [bool]$WithLauncher, [bool]$WithDgv, [scriptblock]$Log)
+    param([string]$GameDir, [bool]$WithLauncher, [bool]$WithDgv, [scriptblock]$Logger)
     if (-not (Test-Path (Join-Path $GameDir 'Client.exe'))) {
-        & $Log "!! $GameDir 下没有 Client.exe，跳过文件部署"
+        & $Logger "!! $GameDir 下没有 Client.exe，跳过文件部署"
         return $false
     }
     $sk = Join-Path $script:RootDir 'StartKit'
-    & $Log "[文件] StartKit（pakkey / CRT_R1 读卡器模拟 / hid.dll / CardNum / Resource 覆盖层）"
-    foreach ($f in $script:StartKitFiles) { Backup-Then-Copy (Join-Path $sk $f) $GameDir $f $Log }
-    Copy-DirMerge (Join-Path $sk 'pakkey') (Join-Path $GameDir 'pakkey') $Log
-    Copy-DirMerge (Join-Path $sk 'Resource') (Join-Path $GameDir 'Resource') $Log
+    & $Logger "[文件] StartKit（pakkey / CRT_R1 读卡器模拟 / hid.dll / CardNum / Resource 覆盖层）"
+    foreach ($f in $script:StartKitFiles) { Backup-Then-Copy (Join-Path $sk $f) $GameDir $f $Logger }
+    Copy-DirMerge (Join-Path $sk 'pakkey') (Join-Path $GameDir 'pakkey') $Logger
+    Copy-DirMerge (Join-Path $sk 'Resource') (Join-Path $GameDir 'Resource') $Logger
 
     # RCGrandDogW32 stub
-    & $Log '[文件] RCGrandDogW32.dll stub'
-    Backup-Then-Copy (Join-Path $script:PkgDir 'multiDLL\RCGrandDogW32_stub.dll') $GameDir 'RCGrandDogW32.dll' $Log
+    & $Logger '[文件] RCGrandDogW32.dll stub'
+    Backup-Then-Copy (Join-Path $script:PkgDir 'multiDLL\RCGrandDogW32_stub.dll') $GameDir 'RCGrandDogW32.dll' $Logger
 
     if ($WithDgv) {
-        & $Log '[文件] dgVoodoo2（Win11 显示修复）'
-        foreach ($f in $script:DgvFiles) { Backup-Then-Copy (Join-Path $script:RootDir "dgVoodoo2\$f") $GameDir $f $Log }
+        & $Logger '[文件] dgVoodoo2（Win11 显示修复）'
+        foreach ($f in $script:DgvFiles) { Backup-Then-Copy (Join-Path $script:RootDir "dgVoodoo2\$f") $GameDir $f $Logger }
     }
     if ($WithLauncher) {
-        & $Log '[文件] Launcher 2.01'
-        foreach ($f in $script:LauncherFiles) { Backup-Then-Copy (Join-Path $script:RootDir "Launcher\$f") $GameDir $f $Log }
+        & $Logger '[文件] Launcher 2.01'
+        foreach ($f in $script:LauncherFiles) { Backup-Then-Copy (Join-Path $script:RootDir "Launcher\$f") $GameDir $f $Logger }
     }
     return $true
 }
 
 # 文件层还原：恢复所有 .bak_official，删除我们加的文件
 function Restore-Files {
-    param([string]$GameDir, [scriptblock]$Log)
+    param([string]$GameDir, [scriptblock]$Logger)
     $restored = 0
     Get-ChildItem $GameDir -File -Filter '*.bak_official' -ErrorAction SilentlyContinue | ForEach-Object {
         $orig = $_.Name -replace '\.bak_official$', ''
         $target = Join-Path $GameDir $orig
         if (Test-Path $target) { Remove-Item $target -Force }
         Rename-Item -LiteralPath $_.FullName -NewName $orig
-        & $Log "  还原 $orig"
+        & $Logger "  还原 $orig"
         $restored++
     }
     foreach ($f in @('hid.dll', 'CardNum.txt') + $script:DgvFiles) {
         $p = Join-Path $GameDir $f
-        if (Test-Path $p) { Remove-Item $p -Force; & $Log "  移除 $f" }
+        if (Test-Path $p) { Remove-Item $p -Force; & $Logger "  移除 $f" }
     }
-    & $Log "文件层还原完成（还原 $restored 个原版备份）。pakkey\ 与 Resource\ 为新增目录，官方组件下不生效，保留无害，可手动删除。"
+    & $Logger "文件层还原完成（还原 $restored 个原版备份）。pakkey\ 与 Resource\ 为新增目录，官方组件下不生效，保留无害，可手动删除。"
 }
 
 # ------------------------------------------------------------ 系统层 ----
@@ -131,23 +131,23 @@ function Invoke-Elevated {
 
 # 一键安装全流程（需管理员）：文件层 → De-DDOOGG install.ps1（证书/驱动/代理）
 function Invoke-FullInstall {
-    param([string]$GameDir, [string]$Flavor, [bool]$WithLauncher, [bool]$WithDgv, [scriptblock]$Log)
-    if (-not (Deploy-Files -GameDir $GameDir -WithLauncher $WithLauncher -WithDgv $WithDgv -Log $Log)) { return }
-    & $Log "[系统] 驱动/证书/代理（install.ps1 -Flavor $Flavor）……"
+    param([string]$GameDir, [string]$Flavor, [bool]$WithLauncher, [bool]$WithDgv, [scriptblock]$Logger)
+    if (-not (Deploy-Files -GameDir $GameDir -WithLauncher $WithLauncher -WithDgv $WithDgv -Logger $Logger)) { return }
+    & $Logger "[系统] 驱动/证书/代理（install.ps1 -Flavor $Flavor）……"
     Invoke-PkgScript 'install.ps1' @('-GameDir', $GameDir, '-Flavor', $Flavor) |
-        ForEach-Object { & $Log "$ $_" }
-    & $Log '全部完成。若 testsigning 是本次才开启的，请重启一次电脑。'
+        ForEach-Object { & $Logger "$ $_" }
+    & $Logger '全部完成。若 testsigning 是本次才开启的，请重启一次电脑。'
 }
 
 # 一键卸载全流程（需管理员）：De-DDOOGG uninstall.ps1 → 文件层还原
 function Invoke-FullUninstall {
-    param([string]$GameDir, [scriptblock]$Log)
-    & $Log '[系统] 卸载虚拟狗驱动（uninstall.ps1）……'
+    param([string]$GameDir, [scriptblock]$Logger)
+    & $Logger '[系统] 卸载虚拟狗驱动（uninstall.ps1）……'
     Invoke-PkgScript 'uninstall.ps1' @('-GameDir', $GameDir) |
-        ForEach-Object { & $Log "$ $_" }
-    & $Log '[文件] 还原文件层……'
-    Restore-Files -GameDir $GameDir -Log $Log
-    & $Log '卸载完成。'
+        ForEach-Object { & $Logger "$ $_" }
+    & $Logger '[文件] 还原文件层……'
+    Restore-Files -GameDir $GameDir -Logger $Logger
+    & $Logger '卸载完成。'
 }
 
 # ---------------------------------------------------------- 测试模式 ----
@@ -335,7 +335,7 @@ if ($global:__cliArgs.Count -gt 0) {
                 Invoke-Elevated -BatArgs $ea
                 break
             }
-            Invoke-FullInstall -GameDir $gameDir -Flavor $flavor -WithLauncher $withLauncher -WithDgv $withDgv -Log { param($s) Write-Host $s }.GetNewClosure()
+            Invoke-FullInstall -GameDir $gameDir -Flavor $flavor -WithLauncher $withLauncher -WithDgv $withDgv -Logger { param($s) Write-Host $s }.GetNewClosure()
             break
         }
         'uninstall' {
@@ -344,15 +344,15 @@ if ($global:__cliArgs.Count -gt 0) {
                 Invoke-Elevated -BatArgs @('uninstall', $gameDir)
                 break
             }
-            Invoke-FullUninstall -GameDir $gameDir -Log { param($s) Write-Host $s }.GetNewClosure()
+            Invoke-FullUninstall -GameDir $gameDir -Logger { param($s) Write-Host $s }.GetNewClosure()
             break
         }
         'deploy-files' {
-            [void](Deploy-Files -GameDir $gameDir -WithLauncher $withLauncher -WithDgv $withDgv -Log { param($s) Write-Host $s }.GetNewClosure())
+            [void](Deploy-Files -GameDir $gameDir -WithLauncher $withLauncher -WithDgv $withDgv -Logger { param($s) Write-Host $s }.GetNewClosure())
             break
         }
         'restore-files' {
-            Restore-Files -GameDir $gameDir -Log { param($s) Write-Host $s }.GetNewClosure()
+            Restore-Files -GameDir $gameDir -Logger { param($s) Write-Host $s }.GetNewClosure()
             break
         }
         { $_ -in 'testmode-on', 'testmode-off' } {
@@ -503,7 +503,7 @@ $btnInstall.add_Click({
     Write-Log("== 一键安装 $g ($fl) ==")
     $form.Refresh()
     try {
-        Invoke-FullInstall -GameDir $g -Flavor $fl -WithLauncher $wl -WithDgv $wd -Log { param($s) Write-Log $s }.GetNewClosure()
+        Invoke-FullInstall -GameDir $g -Flavor $fl -WithLauncher $wl -WithDgv $wd -Logger { param($s) Write-Log $s }.GetNewClosure()
     } catch { Write-Log("安装出错: $_") }
     Write-Log('—— 安装结束 ——')
     foreach ($b in @($btnInstall, $btnUninstall, $btnStatus)) { $b.Enabled = $true }
@@ -520,7 +520,7 @@ $btnUninstall.add_Click({
     Write-Log("== 卸载 $g ==")
     $form.Refresh()
     try {
-        Invoke-FullUninstall -GameDir $g -Log { param($s) Write-Log $s }.GetNewClosure()
+        Invoke-FullUninstall -GameDir $g -Logger { param($s) Write-Log $s }.GetNewClosure()
     } catch { Write-Log("卸载出错: $_") }
     Write-Log('—— 卸载结束 ——')
     foreach ($b in @($btnInstall, $btnUninstall, $btnStatus)) { $b.Enabled = $true }
