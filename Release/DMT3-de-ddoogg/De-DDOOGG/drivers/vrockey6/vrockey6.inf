@@ -7,7 +7,7 @@ Signature="$WINDOWS NT$"
 Class=HIDClass
 ClassGuid={745a17a0-74d3-11d0-b6fe-00a0c90f57da}
 Provider=%Provider%
-DriverVer=09/04/2026,1.1.0.0
+DriverVer=09/04/2026,1.1.0.1
 CatalogFile=vrockey6.cat
 PnpLockdown=1
 
@@ -28,17 +28,22 @@ vrockey6.sys=1
 
 [Install.NT]
 CopyFiles=CopySys
-Include=MsHidKmdf.inf
-Needs=MsHidKmdf.NT
-
-[Install.NT.HW]
-Include=MsHidKmdf.inf
-Needs=MsHidKmdf.NT.HW
 
 [Install.NT.Services]
-Include=MsHidKmdf.inf
-Needs=MsHidKmdf.NT.Services
+; mshidkmdf = 功能驱动（0x2 = SPSVCINST_ASSOCSERVICE，关联为设备功能驱动）
+; vrockey6  = 下层过滤驱动（0x800 = SPSVCINST_STARTSERVICE）
+; 不再用 Include/Needs 引用系统 MsHidKmdf.inf：部分 Win10 版本（如 19041）的
+; 该 INF 结构不同，Needs 继承不到带 ASSOCSERVICE 的 AddService，
+; 会报 0xe0000219"未指定功能驱动"。以下按系统自带 MsHidKmdf.inf 的定义照抄。
+AddService=mshidkmdf,0x00000002,HidKmdfSvc
 AddService=vrockey6,0x00000800,FilterSvc
+
+[HidKmdfSvc]
+DisplayName="Pass-through HID to KMDF Filter Driver"
+ServiceType=1
+StartType=3
+ErrorControl=1
+ServiceBinary=%12%\mshidkmdf.sys
 
 [Install.NT.Filters]
 AddFilter=vrockey6,,FilterInstall

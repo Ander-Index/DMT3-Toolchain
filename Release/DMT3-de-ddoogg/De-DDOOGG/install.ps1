@@ -32,9 +32,13 @@ if ($bcd -notmatch 'testsigning\s+Yes') {
     exit 2
 }
 
-# 3. 安装驱动包（先清掉仓库里的旧副本——旧版 INF 可能带 NTamd64.10.0...22000
-#    之类 OS 限定，在 Win10 上装不了；使用中（设备在线）的包删不掉则保留并跳过添加）
+# 3. 安装驱动包
 Write-Host "[3/6] 安装驱动包 itoken2 / vrockey6 ..."
+# 先移除现有/半残虚拟狗节点（释放对旧驱动包的占用；幂等，不存在无妨），
+# 再清仓库旧副本（删不掉=仍被占用，无妨——第 4 步 devcon 始终用包内 INF 安装）。
+foreach ($hwid in 'root\vid_0471&pid_485d', 'root\vrockey6') {
+    try { & "$root\tools\devcon.exe" remove $hwid 2>$null | Out-Null } catch {}
+}
 $enum = pnputil /enum-drivers | Out-String
 foreach ($b in ($enum -split "(?=oem\d+\.inf)")) {
     if (($b -match 'itoken2\.inf|vrockey6\.inf') -and ($b -match '(oem\d+\.inf)')) {
@@ -42,21 +46,12 @@ foreach ($b in ($enum -split "(?=oem\d+\.inf)")) {
         try { pnputil /delete-driver $Matches[1] 2>$null | Out-Null } catch {}
     }
 }
-$existing = pnputil /enum-drivers | Out-String
-foreach ($inf in 'itoken2\itoken2.inf', 'vrockey6\vrockey6.inf') {
-    $name = Split-Path $inf -Leaf
-    if ($existing -match [regex]::Escape($name)) {
-        Write-Host "  $name 已在驱动仓库（使用中），跳过"
-    } else {
-        pnputil /add-driver "$root\drivers\$inf" /install
-    }
-}
+pnputil /add-driver "$root\drivers\itoken2\itoken2.inf" /install
+pnputil /add-driver "$root\drivers\vrockey6\vrockey6.inf" /install
 
-# 4. 创建设备节点（先按硬件 ID 清掉历史/半残节点——上次 devcon 失败会留下无驱动节点）
+# 4. 创建设备节点（devcon 退出码不可靠——成功也可能非 0，成败以 [6/6] 枚举验证为准）
 Write-Host "[4/6] 创建虚拟设备 ..."
 foreach ($d in @(@('itoken2\itoken2.inf', 'root\vid_0471&pid_485d'), @('vrockey6\vrockey6.inf', 'root\vrockey6'))) {
-    try { & "$root\tools\devcon.exe" remove $d[1] 2>$null | Out-Null } catch {}
-    # 注意：devcon 的退出码不可靠（成功也可能返回非 0），成败以末尾 [6/6] 枚举验证为准
     & "$root\tools\devcon.exe" install "$root\drivers\$($d[0])" $d[1]
 }
 Start-Sleep -Seconds 2
