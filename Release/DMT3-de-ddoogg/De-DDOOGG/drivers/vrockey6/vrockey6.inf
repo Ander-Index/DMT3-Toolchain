@@ -7,7 +7,7 @@ Signature="$WINDOWS NT$"
 Class=HIDClass
 ClassGuid={745a17a0-74d3-11d0-b6fe-00a0c90f57da}
 Provider=%Provider%
-DriverVer=08/26/2026,1.1.0.0
+DriverVer=09/04/2026,1.1.0.0
 CatalogFile=vrockey6.cat
 PnpLockdown=1
 
@@ -21,9 +21,9 @@ DefaultDestDir=13
 vrockey6.sys=1
 
 [Manufacturer]
-%Mfg%=Std,NTamd64.10.0...22000
+%Mfg%=Std,NTamd64.10.0
 
-[Std.NTamd64.10.0...22000]
+[Std.NTamd64.10.0]
 %DeviceDesc%=Install, root\vrockey6
 
 [Install.NT]

@@ -8,7 +8,7 @@ Signature="$WINDOWS NT$"
 Class=System
 ClassGuid={4d36e97d-e325-11ce-bfc1-08002be10318}
 Provider=%Provider%
-DriverVer=08/27/2026,1.0.0.5
+DriverVer=09/04/2026,1.0.0.5
 CatalogFile=itoken2.cat
 PnpLockdown=1
 
@@ -22,9 +22,9 @@ DefaultDestDir=13
 itoken2.sys=1
 
 [Manufacturer]
-%Mfg%=Std,NTamd64.10.0...22000
+%Mfg%=Std,NTamd64.10.0
 
-[Std.NTamd64.10.0...22000]
+[Std.NTamd64.10.0]
 %DeviceDesc%=Install, root\vid_0471&pid_485d
 
 [Install.NT]

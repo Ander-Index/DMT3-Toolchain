@@ -131,10 +131,16 @@ function Invoke-PkgScript {
 
 function Invoke-Elevated {
     param([string[]]$BatArgs)
-    # 直接以 UAC 提升启动本 bat（ShellExecute runas；不再走 cmd /k 拼接——那会因引号断掉）
+    # 以 UAC 提升重跑本 bat。三个坑，缺一不可：
+    # 1. 含空格的参数（如游戏目录）必须加引号，否则 bat 端解析 %* 时在空格处截断
+    # 2. ShellExecute 对 .bat 走 batfile→cmd /c，其"剥首尾引号"规则会毁掉
+    #    带引号的参数串（表现为提权窗口根本没起来）——故改用 cmd.exe 作入口
+    # 3. 整体再套一层引号，专供 cmd /c 剥离
     # 末尾加 'pause' 哨兵：CLI 跑完后停住供查看
+    $quoted = @($BatArgs + 'pause') | ForEach-Object { if ($_ -match '\s') { '"{0}"' -f $_ } else { $_ } }
+    $argLine = '/d /c ""{0}" {1}"' -f $env:DMT3_SELF, ($quoted -join ' ')
     Start-Process -Verb RunAs -WorkingDirectory $script:RootDir `
-        -FilePath $env:DMT3_SELF -ArgumentList ($BatArgs + 'pause')
+        -FilePath $env:ComSpec -ArgumentList $argLine
 }
 
 # 一键安装全流程（需管理员）：文件层 → De-DDOOGG install.ps1（证书/驱动/代理）
