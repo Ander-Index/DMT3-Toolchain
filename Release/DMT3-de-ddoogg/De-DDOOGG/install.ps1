@@ -85,4 +85,15 @@ $ok2 = $devs2 -match 'Virtual Rockey6 SMART PLUS Dongle'
 Write-Host ("  itoken2v2 (虚拟狗①枚举):  " + $(if ($ok1) {'OK'} else {'缺失!'}))
 Write-Host ("  vrockey6  (虚拟狗②):      " + $(if ($ok2) {'OK'} else {'缺失!'}))
 if ($ok1 -and $ok2) { Write-Host "`n安装完成！拔掉两只实物狗，直接启动游戏即可。" -ForegroundColor Green }
-else { Write-Host "`n有设备未就绪，请检查上方输出。" -ForegroundColor Red; exit 3 }
+else {
+    Write-Host "`n有设备未就绪，请检查上方输出。" -ForegroundColor Red
+    # 自动附 setupapi 日志中的错误行（!!! 前缀 = 安装器错误记录），便于定位驱动安装失败原因
+    Write-Host "—— C:\Windows\INF\setupapi.dev.log 最近错误记录 ——" -ForegroundColor Yellow
+    try {
+        $hit = Get-Content C:\Windows\INF\setupapi.dev.log -Tail 400 -ErrorAction Stop |
+            Select-String -Pattern '!!!|vrockey6|itoken2' | Select-Object -Last 12
+        if ($hit) { $hit | ForEach-Object { Write-Host ("  " + $_.Line.Trim()) } }
+        else { Write-Host '  （未找到相关记录，可手动检查该日志与杀软拦截记录）' }
+    } catch { Write-Host "  （读取 setupapi.dev.log 失败：$_）" }
+    exit 3
+}
