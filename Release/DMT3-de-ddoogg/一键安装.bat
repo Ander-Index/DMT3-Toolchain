@@ -60,7 +60,10 @@ function Backup-Then-Copy {
 
 function Copy-DirMerge {
     param([string]$SrcDir, [string]$DstDir, [scriptblock]$Logger)
-    Copy-Item $SrcDir $DstDir -Recurse -Force
+    # 内容级合并：直接 Copy-Item 目录本体时，目标已存在会被复制"进"目标（套娃）。
+    # 先确保目标存在，再拷 SrcDir\*，无论跑几次都是合并覆盖。
+    New-Item -ItemType Directory -Force $DstDir | Out-Null
+    Copy-Item (Join-Path $SrcDir '*') $DstDir -Recurse -Force
     $n = (Get-ChildItem $DstDir -Recurse -File).Count
     & $Logger "  部署 $(Split-Path $SrcDir -Leaf)\（$n 个文件）"
 }
@@ -73,6 +76,11 @@ function Deploy-Files {
         return $false
     }
     $sk = Join-Path $script:RootDir 'StartKit'
+    # 旧版安装器重复安装会留下套娃目录（pakkey\pakkey、Resource\Resource），顺带清理
+    foreach ($dup in @('pakkey\pakkey', 'Resource\Resource')) {
+        $p = Join-Path $GameDir $dup
+        if (Test-Path $p) { Remove-Item $p -Recurse -Force; & $Logger "  清理历史套娃目录 $dup\" }
+    }
     & $Logger "[文件] StartKit（pakkey / CRT_R1 读卡器模拟 / hid.dll / CardNum / Resource 覆盖层）"
     foreach ($f in $script:StartKitFiles) { Backup-Then-Copy (Join-Path $sk $f) $GameDir $f $Logger }
     Copy-DirMerge (Join-Path $sk 'pakkey') (Join-Path $GameDir 'pakkey') $Logger

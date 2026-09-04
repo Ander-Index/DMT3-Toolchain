@@ -32,10 +32,17 @@ if ($bcd -notmatch 'testsigning\s+Yes') {
     exit 2
 }
 
-# 3. 安装驱动包
+# 3. 安装驱动包（幂等：已在驱动仓库则跳过，避免重复安装堆积多个 oem 包）
 Write-Host "[3/6] 安装驱动包 itoken2 / vrockey6 ..."
-pnputil /add-driver "$root\drivers\itoken2\itoken2.inf" /install
-pnputil /add-driver "$root\drivers\vrockey6\vrockey6.inf" /install
+$existing = pnputil /enum-drivers | Out-String
+foreach ($inf in 'itoken2\itoken2.inf', 'vrockey6\vrockey6.inf') {
+    $name = Split-Path $inf -Leaf
+    if ($existing -match [regex]::Escape($name)) {
+        Write-Host "  $name 已在驱动仓库，跳过"
+    } else {
+        pnputil /add-driver "$root\drivers\$inf" /install
+    }
+}
 
 # 4. 创建设备节点（幂等：已存在则跳过）
 Write-Host "[4/6] 创建虚拟设备 ..."
